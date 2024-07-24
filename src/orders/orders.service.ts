@@ -4,6 +4,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { PrismaClient } from '@prisma/client';
 import { RpcException } from '@nestjs/microservices';
+import { ChangeOrderStatusDto } from './dto/change-order.status.dto';
 
 @Injectable()
 export class OrdersService extends PrismaClient implements OnModuleInit {
@@ -23,9 +24,9 @@ export class OrdersService extends PrismaClient implements OnModuleInit {
   }
 
   async findAll(orderPaginationDto: OrderPaginationDto) {
-    
+
     const totalOrders = await this.order.count({
-      where:  {
+      where: {
         status: orderPaginationDto.status
       }
     })
@@ -44,7 +45,7 @@ export class OrdersService extends PrismaClient implements OnModuleInit {
       meta: {
         total: totalOrders,
         page: currentPage,
-        lastPage: Math.ceil(totalOrders/perPage)
+        lastPage: Math.ceil(totalOrders / perPage)
       }
 
 
@@ -67,6 +68,21 @@ export class OrdersService extends PrismaClient implements OnModuleInit {
 
     return order;
 
+  }
+
+
+  async changeStatus(changeOrderStatusDto: ChangeOrderStatusDto) {
+    const { id, status } = changeOrderStatusDto;
+
+    const order = await this.findOne(id);
+    if (order.status === status) {
+      return order;
+    }
+
+    return this.order.update({
+      where: { id: id },
+      data: { status: status }
+    });
   }
 
 }
