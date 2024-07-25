@@ -9,7 +9,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql" 
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -21,19 +21,27 @@ enum OrderStatus {
 }
 
 model Order {
-  id String @id @default(uuid()) // @id define primary key, indice, etc
+  id          String @id @default(uuid()) // @id define primary key, indice, etc
   totalAmount Float
-  totalItems Int
+  totalItems  Int
 
   // status OrderStatus @default(PENDING)
-  status OrderStatus
-  paid Boolean @default(false)
+  status OrderStatus @default(PENDING)
+  paid   Boolean     @default(false)
   paidAt DateTime?
 
   createAt DateTime @default(now())
   updateAt DateTime @updatedAt
 
-
+  OrderItem OrderItem[]
 }
 
+model OrderItem {
+  id        String @id @default(uuid())
+  productId Int
+  quantity  Int
+  price     Float
 
+  Order   Order?  @relation(fields: [orderId], references: [id])
+  orderId String?
+}
