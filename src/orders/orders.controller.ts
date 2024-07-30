@@ -16,7 +16,7 @@ export class OrdersController {
   }
 
   //@MessagePattern('findAllOrders')
-  @MessagePattern({ cmd: 'find_all_orders' })
+  @MessagePattern('findAllOrders')
   findAll(@Payload() orderPaginationDto: OrderPaginationDto) {
     return this.ordersService.findAll(orderPaginationDto);
   }
@@ -30,7 +30,7 @@ export class OrdersController {
   @MessagePattern('changeOrderStatus')
   changeOrderStatus(@Payload() changeOrderStatusDto: ChangeOrderStatusDto) {
     return this.ordersService.changeStatus(changeOrderStatusDto);
-   
+
   }
 
 
