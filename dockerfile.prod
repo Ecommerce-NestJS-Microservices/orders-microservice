@@ -1,0 +1,88 @@
+# Dependencies : This create a virtual machine where live all node_modules
+
+FROM node:20.15.0-alpine3.19 AS deps
+
+WORKDIR /usr/src/app
+
+COPY package.json ./
+COPY package-lock.json ./
+
+RUN npm install
+
+
+
+
+
+
+#Builder  - Buil the application # since in dockerignore ,dist and nodemodules, exists there. In container(.) won't copy this files from my local(.)
+# It usually appears as a  reference to an image
+FROM node:20.15.0-alpine3.19 AS build
+# We should place the values that less changes on the top because each commando is a layer.Also It could be made with build command here without use doccker-compose ans his enviroment variables
+#This arg come from docker.compose.yml and pass it to a DATABASE_URL
+ARG ORDERS_DATABASE_URL
+ENV DATABASE_URL=$ORDERS_DATABASE_URL
+
+#container
+WORKDIR /usr/src/app
+
+#Copy dependencies from deps like node modules (nest builds, uuid,)
+#COPY source (--from=deps /usr/src/app/node_modules) dest (./node_modules) deps=stage
+#COPY --from=deps origin dest   (./ = WORKDIR)
+COPY --from=deps /usr/src/app/node_modules ./node_modules 
+
+#Copy all source code (prisma, testing config files ....etc ) of app(host) to the container without file included in dockerignore
+COPY . .
+
+# Postres works differently of MongoAtlas, We need to do migrate before to generate the table. unlike auth-ms 
+RUN npx prisma migrate deploy
+
+#It's not necessary if We execute the commando RUN npx prisma migrate deploy but for now we leave it.
+RUN npx prisma generate
+#This genererate the client y this is part node module and it are copy under in prod.
+# We can perform migrations as long as  the database is well-defined and you have provided the URL.
+# the environment varialbe will set 
+# THis case don't use like product because product-ms generated phisical file , database was created there, so we needed created either. In this case It's not necessary since the database is in his independenty service
+
+
+#RUN npm run test , if the test fail, execution will be stoped and building
+#This create the dis (distribution) file
+RUN npm run build
+
+RUN npm ci -f --only=production && npm cache clean --force
+
+
+
+
+
+# Create the final image of Docker
+FROM node:20.15.0-alpine3.19 AS prod
+
+#Always we goint to work in WORKIDIR, which is where work node alpine 
+WORKDIR /usr/src/app
+
+COPY --from=build /usr/src/app/node_modules ./node_modules
+
+#Copy the folder de DIST
+COPY --from=build /usr/src/app/dist ./dist
+
+#environment variable (optional)
+ENV NODE_ENV=production
+
+#Create user named node and move to it, this user, execute the follow, the user that come from this image, have got a lot of privilege, it could delete code, directories
+#It only have execution privilege
+USER node
+
+#this could be for environment variable
+EXPOSE 3006
+
+#execute app 
+CMD ["node", "dist/main.js"]
+
+#this images are as small virtual machine, inside there isn't nothing running in port 3000, That ist to say,there won't be a port conflict themselves.
+#We can performance the migrations here when you start app
+
+
+
+
+#Orders-ms (PostgreSQL): Se debe ejecutar npx prisma migrate deploy y npx prisma generate antes de RUN npm run build para asegurar que las migraciones se apliquen y que el cliente Prisma esté actualizado antes de compilar la aplicación.
+#Auth-ms (MongoDB): Se puede ejecutar npx prisma generate después de RUN npm run build porque MongoDB no requiere migraciones estructuradas y solo se necesita el cliente actualizado.
