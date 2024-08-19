@@ -1,26 +1,72 @@
 steps:
-  - name: "gcr.io/cloud-builders/docker"
-    args:
-      [
-        "build",
-        "-t",
-       #"XXXXX-docker.pkg.dev/project-name/registry/image-name",
-        "northamerica-northeast1-docker.pkg.dev/microservices-dev-432918/image-registry/orders-ms",
-        "-f",
-        "dockerfile.prod",
-        "--platform=linux/amd64",
-        ".",
-      ]
-      #like demonio docker
-  - name: "gcr.io/cloud-builders/docker" 
-    args:
-      [
-        "push",
-        #"XXXXX-docker.pkg.dev/project-name/registry/image-name",
-        "northamerica-northeast1-docker.pkg.dev/microservices-dev-432918/image-registry/orders-ms",
-      ]
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args:
+    - -c
+    - |
+      docker build -t northamerica-northeast1-docker.pkg.dev/microservices-dev-432918/image-registry/orders-ms -f dockerfile.prod --platform=linux/amd64 --build-arg ORDERS_DATABASE_URL=$$DATABASE_URL .
+  secretEnv: ['DATABASE_URL']
 
-      # Agregar esta sección al final del archivo
-options:
-  logging: CLOUD_LOGGING_ONLY
+- name: 'gcr.io/cloud-builders/docker'
+  args:
+    [
+      'push',
+      'northamerica-northeast1-docker.pkg.dev/microservices-dev-432918/image-registry/orders-ms',
+    ]
+
+availableSecrets:
+  secretManager:
+  - versionName: projects/661811526430/secrets/orders_database_url/versions/1
+    env: 'DATABASE_URL'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# steps:
+#   - name: "gcr.io/cloud-builders/docker"
+#     args:
+#       [
+#         "build",
+#         "-t",
+#        #"XXXXX-docker.pkg.dev/project-name/registry/image-name",
+#         "northamerica-northeast1-docker.pkg.dev/microservices-dev-432918/image-registry/orders-ms",
+#         "-f",
+#         "dockerfile.prod",
+#         "--platform=linux/amd64",
+#         ".",
+#       ]
+#       #like demonio docker
+#   - name: "gcr.io/cloud-builders/docker" 
+#     args:
+#       [
+#         "push",
+#         #"XXXXX-docker.pkg.dev/project-name/registry/image-name",
+#         "northamerica-northeast1-docker.pkg.dev/microservices-dev-432918/image-registry/orders-ms",
+#       ]
+
+#       # Agregar esta sección al final del archivo
+# options:
+#   logging: CLOUD_LOGGING_ONLY
 
